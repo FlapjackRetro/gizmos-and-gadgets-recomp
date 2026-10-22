@@ -17,6 +17,22 @@ gizmos.exe --game-dir C:\DOS\Gizmos --scale 4 -- -sb
 A console window opens alongside the game; it shows the log. Close the game window to quit.
 For a bug report, run with `set GG_TRACE=1` first and save the console output.
 
+## Install script (easiest)
+
+Download the repository (*Code → Download ZIP* on GitHub, or just `install-windows.bat` and
+`install-windows.ps1`) and double-click **`install-windows.bat`**. It:
+
+1. checks for Python 3.8+, CMake 3.20+, Ninja and a MinGW-w64 compiler, and downloads portable
+   copies of any that are missing (Python embeddable, CMake, Ninja, llvm-mingw) into
+   `%LOCALAPPDATA%\GizmosRecomp\tools` -- no admin rights, nothing installed system-wide;
+2. gets this repository (unless it is run from inside one) and pcrecomp;
+3. asks for your `ssg.exe` with a file dialog and checks its SHA-256;
+4. generates the C, builds `gizmos.exe` (SDL2 is downloaded and built too), puts it in
+   `%LOCALAPPDATA%\GizmosRecomp\bin` and offers to copy it into your game folder.
+
+Options: `install-windows.bat -SsgExe C:\DOS\Gizmos\ssg.exe`, `-InstallDir D:\Gizmos`, `-NoCopy`.
+Downloads total about 250 MB the first time; the build takes several minutes.
+
 ## Build natively with MSVC
 
 Install: Visual Studio 2022 (or Build Tools) with *Desktop development with C++*, CMake ≥ 3.20

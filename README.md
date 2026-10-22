@@ -39,7 +39,8 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 
-Windows (native MSVC build or cross-compiling from Linux/macOS): see [docs/WINDOWS.md](docs/WINDOWS.md).
+**Windows:** double-click `install-windows.bat`. It fetches anything missing, asks for your
+`ssg.exe` and builds `gizmos.exe`. Manual MSVC builds and cross-compiling: [docs/WINDOWS.md](docs/WINDOWS.md).
 
 ## Run
 
