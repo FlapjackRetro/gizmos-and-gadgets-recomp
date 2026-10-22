@@ -1,0 +1,18 @@
+# Game files: bring your own, never commit
+original/*
+!original/README.md
+*.dat
+*.DAT
+*.exe
+*.EXE
+
+# Generated from the game's code
+src/gen/
+work/
+
+# Build and run output
+build*/
+run/
+*.bmp
+misses.txt
+__pycache__/

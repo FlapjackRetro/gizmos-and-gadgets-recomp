@@ -1,0 +1,5 @@
+# Interrupt handlers the game installs at run time (INT 21h AH=25h), as image offsets.
+# INT 08 timer  0454:0096
+045D6
+# INT 09 keyboard 0454:00E4
+04624

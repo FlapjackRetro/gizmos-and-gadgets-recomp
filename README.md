@@ -1,0 +1,93 @@
+# Gizmos & Gadgets — native recompilation
+
+A native build of *Super Solvers: Gizmos & Gadgets* (The Learning Company, 1993, DOS v1.0)
+that runs without DOSBox. The game's 16-bit x86 code is statically recompiled to C and linked
+against a small runtime that stands in for DOS, the BIOS and the PC hardware, with SDL2 for the
+window and input.
+
+This repository is the **recompilation** only: a faithful, moddable native port. The Archipelago
+randomizer is a separate project built on top of it.
+
+No game code or data is in this repository. You bring your own `ssg.exe` and data files; the C is
+generated from your copy at build time.
+
+## Status
+
+| Area | State |
+|---|---|
+| Lift | all 1,314 functions lift to C and compile (GCC, Clang; MSVC untested) |
+| Boot | Borland startup, VROOMM overlay manager, hardware checks, resource archives |
+| Video | VGA mode 13h, palette, 60 Hz presentation |
+| Input | keyboard through the game's own INT 9 handler; INT 33h mouse driver |
+| Reached | title, intro story, **Sign In** screen |
+| Sound | not yet: runs with `-sn` (Sound Blaster + OPL is next) |
+| Platforms | Linux built and run headless and under SDL; Windows/macOS builds are set up, not yet tested |
+
+## Build
+
+You need Python 3, CMake ≥ 3.20, a C compiler, and a checkout of
+[pcrecomp](https://github.com/sp00nznet/pcrecomp) next to this repository (or `PCRECOMP_HOME`
+pointing at one). SDL2 is downloaded by CMake if it is not installed.
+
+```sh
+git clone https://github.com/sp00nznet/pcrecomp ../pcrecomp
+cp /path/to/your/game/ssg.exe original/
+python tools/build.py                       # generates src/gen from your ssg.exe
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+```
+
+On Windows use a Developer PowerShell (MSVC) or MinGW; the commands are the same.
+
+## Run
+
+```sh
+build/gizmos --game-dir /path/to/your/game        # folder with gizmo000-004.dat, PLAYERS.DAT, ssg.exe
+build/gizmos --game-dir ... -- -sn -gv            # pass the game's own switches after --
+```
+
+The game folder needs the original `ssg.exe` too: the game's overlay manager opens it at startup
+to check the overlay block, even though the overlays themselves are already compiled in.
+
+Bring-up switches (environment variables):
+
+| Variable | Effect |
+|---|---|
+| `GG_TRACE=1` / `2` | log DOS, BIOS, unhandled ports / every BIOS interrupt |
+| `GG_FILM=dir[:ms]` | save the screen as BMP every *ms* (default 1000) |
+| `GG_KEYS=ms:sc,...` | press PC scancode *sc* (hex) at *ms*, e.g. `20000:1C` = Enter |
+| `GG_QUIT_AFTER=ms` | exit after *ms*, writing `last_frame.bmp` and `misses.txt` |
+| `GG_HEADLESS=1` | no window |
+
+## How it works
+
+```
+original/ssg.exe
+  └─ tools/unvroomm.py      flatten Borland VROOMM overlays into one MZ image
+                            (overlay code moved to C000:0000, selectors resolved)
+  └─ tools/find_functions.py  function starts: Ghidra seeds (data/) + pcrecomp's analyzer
+  └─ tools/lift.py          pcrecomp lift16 → src/gen/recomp_*.c  (+ dispatch table)
+  └─ tools/embed_image.py   the load image (initial data, tables) → src/gen/image_data.c
+src/runtime/                DOS (INT 21h), BIOS (10h/16h/1Ah), INT 33h mouse, PIT, PIC,
+                            keyboard controller, VGA DAC; calls the game's own INT 8/9 handlers
+src/host/                   SDL2 window/input, or headless
+```
+
+Lifted functions are named after their address in the flattened image (`fn_XXXXX`). Addresses the
+game reaches only at run time (interrupt handlers it installs, function pointers) are recorded in
+`data/runtime_*.txt` so the lift is reproducible. See [docs/BRINGUP.md](docs/BRINGUP.md) for the
+decisions and fixes made along the way.
+
+## Roadmap
+
+1. Sound Blaster DSP (digitised speech/effects) and OPL2 FM music.
+2. A mod hook API at the points already mapped by the AP project: race won, door opened, part box
+   opened, building select, level entry, item grant.
+3. Replace lifted functions with readable C, starting with the ones mods touch.
+4. Windows and macOS builds tested and packaged.
+
+## Credits
+
+Built on [pcrecomp](https://github.com/sp00nznet/pcrecomp) and the
+[DinoPark Tycoon recomp](https://github.com/sp00nznet/dinopark) by sp00nz (both MIT);
+see [NOTICE.md](NOTICE.md). *Gizmos & Gadgets* is © 1993 The Learning Company.
