@@ -37,7 +37,8 @@ void rt_load(CPU *cpu, const char *cmdline)
     memcpy(&cpu->mem[psp + 0x81], cmdline, n);
     cpu->mem[psp + 0x81 + n] = 0x0D;
 
-    static const char *const envv[] = { "COMSPEC=C:\\COMMAND.COM", "PATH=C:\\DOS", "PROMPT=$p$g" };
+    static const char *const envv[] = { "COMSPEC=C:\\COMMAND.COM", "PATH=C:\\DOS", "PROMPT=$p$g",
+                                        "BLASTER=A220 I7 D1 T3" };   /* SB 2.0 at 220h, IRQ 7, DMA 1 */
     static const char progpath[] = "C:\\GIZMOS\\SSG.EXE";
     memset(&cpu->mem[env], 0, 0x400);
     uint32_t e = env;

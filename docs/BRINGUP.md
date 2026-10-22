@@ -41,6 +41,22 @@ after the load image and is reached through `INT 3Fh` stubs. The flattener:
 The overlay manager opens the program's own EXE (`C:\GIZMOS\SSG.EXE` from the environment, then
 its internal name `gizmo.exe`) at startup; the original `ssg.exe` must be in the game folder.
 
+## Sound
+
+- `-sb` (and, as far as the code shows, `-sm`) means the card's **OPL2 FM chip**, used for music
+  *and* effects. The game never addresses the Sound Blaster's DSP (no 22xh traffic even with a
+  `BLASTER` variable set), so no digital audio is emulated. The only hardcoded sound port is 388h.
+- The driver writes the index to 388h, reads the status 6 times, writes the data to 389h, reads
+  35 times — the classic AdLib delays. Status reads return emu8950's timer flags with the YM3812's
+  low bits (06).
+- Rendering happens on the game thread, in step with the wall clock: before every data write and
+  on every service tick, so register writes land on the right sample. SDL gets it through its
+  audio queue (40–125 ms kept queued).
+- Verified headless with `GG_WAV`: the intro theme is in tune (a C-major chord at 131/392/521/657/
+  782 Hz at 18 s) with effects at ~4 s and ~11 s; and through SDL's disk audio driver.
+- `-si` (PC speaker: PIT channel 2 gated by port 61h) is emulated but the title/intro make no
+  speaker sound at all, so it is untested.
+
 ## Lifter fixes (tools/lift.py, on top of DinoPark's driver)
 
 - **Code ranges.** Code is in two ranges (resident `[0, DD70)`, overlays `[C0000, D76B0)`);

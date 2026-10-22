@@ -23,7 +23,9 @@ set(RUNTIME_SOURCES
   src/runtime/dos.c
   src/runtime/bios.c
   src/runtime/hw.c
-  src/runtime/sound.c)
+  src/runtime/sound.c
+  third_party/emu8950/emu8950.c
+  third_party/emu8950/emuadpcm.c)
 
 add_executable(gizmos ${RUNTIME_SOURCES} ${GEN_SOURCES})
 target_include_directories(gizmos PRIVATE src src/runtime)
@@ -50,7 +52,10 @@ else()
   if(NOT SDL2_FOUND AND GG_FETCH_SDL)
     include(FetchContent)
     FetchContent_Declare(SDL2
-      URL https://github.com/libsdl-org/SDL/releases/download/release-2.30.9/SDL2-2.30.9.tar.gz)
+      URL https://github.com/libsdl-org/SDL/releases/download/release-2.30.9/SDL2-2.30.9.tar.gz
+      DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+    message(STATUS "Building SDL2 from source. On Linux, install your distro's SDL2 package "
+                   "(e.g. libsdl2-dev) instead, or ALSA/PulseAudio headers, or there will be no audio.")
     set(SDL_SHARED OFF CACHE BOOL "" FORCE)
     set(SDL_STATIC ON CACHE BOOL "" FORCE)
     set(SDL_TEST OFF CACHE BOOL "" FORCE)

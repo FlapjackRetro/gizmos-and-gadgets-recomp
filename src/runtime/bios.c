@@ -217,6 +217,8 @@ void rt_service(CPU *cpu)
         mouse_service(cpu);
     }
 
+    sound_update();
+
     /* present at ~60 Hz */
     if (now - g_last_present >= 16) { g_last_present = now; present(cpu); }
 

@@ -70,9 +70,13 @@ void vga_out(uint16_t port, uint8_t val);
 void vga_compose_rgba(CPU *cpu, uint32_t *out);   /* 320x200 */
 void vga_dump_bmp(CPU *cpu, const char *path);
 
-/* sound hardware ports (Sound Blaster DSP + OPL); see sound.c */
+/* sound hardware: OPL2 FM + PC speaker; see sound.c */
 uint8_t sound_in(uint16_t port, int *handled);
 int     sound_out(uint16_t port, uint8_t val);
+void    sound_init(void);
+void    sound_update(void);                /* render audio up to now */
+void    sound_shutdown(void);
+void    sound_set_speaker(uint8_t port61_bits, double hz);
 
 /* the main service point, run from recomp_tick and from port/int traffic */
 void rt_service(CPU *cpu);
@@ -84,5 +88,7 @@ void host_pump(void);                      /* feeds kbd_/mouse_ */
 int  host_quit_requested(void);
 void host_shutdown(void);
 int  host_headless(void);
+void host_audio_open(int rate);            /* mono S16 */
+void host_audio_push(const int16_t *samples, int n);
 
 #endif

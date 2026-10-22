@@ -7,3 +7,5 @@ void host_pump(void) {}
 int  host_quit_requested(void) { return 0; }
 void host_shutdown(void) {}
 int  host_headless(void) { return 1; }
+void host_audio_open(int rate) { (void)rate; }
+void host_audio_push(const int16_t *s, int n) { (void)s; (void)n; }

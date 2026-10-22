@@ -16,3 +16,5 @@ run/
 *.bmp
 misses.txt
 __pycache__/
+*.wav
+*.raw

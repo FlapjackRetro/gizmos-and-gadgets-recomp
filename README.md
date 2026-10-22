@@ -20,14 +20,16 @@ generated from your copy at build time.
 | Video | VGA mode 13h, palette, 60 Hz presentation |
 | Input | keyboard through the game's own INT 9 handler; INT 33h mouse driver |
 | Reached | title, intro story, **Sign In** screen |
-| Sound | not yet: runs with `-sn` (Sound Blaster + OPL is next) |
+| Sound | OPL2 FM music and effects (`-sb`, the default) via emu8950; PC speaker (`-si`) wired but unverified |
 | Platforms | Linux built and run headless and under SDL; Windows/macOS builds are set up, not yet tested |
 
 ## Build
 
 You need Python 3, CMake ≥ 3.20, a C compiler, and a checkout of
 [pcrecomp](https://github.com/sp00nznet/pcrecomp) next to this repository (or `PCRECOMP_HOME`
-pointing at one). SDL2 is downloaded by CMake if it is not installed.
+pointing at one). SDL2 is downloaded and built by CMake if it is not installed; on Linux install
+your distribution's package instead (`sudo apt install libsdl2-dev` on Ubuntu), because a
+from-source SDL2 only gets audio back-ends whose development headers are present.
 
 ```sh
 git clone https://github.com/sp00nznet/pcrecomp ../pcrecomp
@@ -58,6 +60,8 @@ Bring-up switches (environment variables):
 | `GG_KEYS=ms:sc,...` | press PC scancode *sc* (hex) at *ms*, e.g. `20000:1C` = Enter |
 | `GG_QUIT_AFTER=ms` | exit after *ms*, writing `last_frame.bmp` and `misses.txt` |
 | `GG_HEADLESS=1` | no window |
+| `GG_WAV=file.wav` | also record the audio to a WAV file |
+| `GG_MUTE=1`, `GG_VOLUME=percent` | audio off / level (100 = default) |
 
 ## How it works
 
@@ -69,7 +73,9 @@ original/ssg.exe
   └─ tools/lift.py          pcrecomp lift16 → src/gen/recomp_*.c  (+ dispatch table)
   └─ tools/embed_image.py   the load image (initial data, tables) → src/gen/image_data.c
 src/runtime/                DOS (INT 21h), BIOS (10h/16h/1Ah), INT 33h mouse, PIT, PIC,
-                            keyboard controller, VGA DAC; calls the game's own INT 8/9 handlers
+                            keyboard controller, VGA DAC, OPL2 + PC speaker audio;
+                            calls the game's own INT 8/9 handlers
+third_party/emu8950/        OPL2 (YM3812) emulator, MIT
 src/host/                   SDL2 window/input, or headless
 ```
 
@@ -80,11 +86,10 @@ decisions and fixes made along the way.
 
 ## Roadmap
 
-1. Sound Blaster DSP (digitised speech/effects) and OPL2 FM music.
-2. A mod hook API at the points already mapped by the AP project: race won, door opened, part box
+1. A mod hook API at the points already mapped by the AP project: race won, door opened, part box
    opened, building select, level entry, item grant.
-3. Replace lifted functions with readable C, starting with the ones mods touch.
-4. Windows and macOS builds tested and packaged.
+2. Replace lifted functions with readable C, starting with the ones mods touch.
+3. Windows and macOS builds tested and packaged.
 
 ## Credits
 

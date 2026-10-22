@@ -13,6 +13,13 @@ static int pit_lohi[3], pit_wrote_lo[3];
 static uint8_t pit_latch_lo[3];
 static int pit_access[3] = { 3, 3, 3 };          /* 1 lo, 2 hi, 3 lo/hi */
 static uint8_t port61;
+static void speaker_changed(void);
+
+static void speaker_changed(void)
+{
+    double div = pit_reload[2] ? pit_reload[2] : 65536.0;
+    sound_set_speaker(port61, PIT_HZ / div);
+}
 
 double pit_ch0_hz(void)
 {
@@ -54,6 +61,7 @@ void pit_out(uint16_t port, uint8_t val)
         else { pit_reload[ch] = (uint16_t)((pit_reload[ch] & 0x00FF) | (val << 8)); pit_wrote_lo[ch] = 0;
                if (ch == 0) TRACE("[pit] ch0 reload %u (%.1f Hz)\n", pit_reload[0], pit_ch0_hz()); }
     }
+    if (ch == 2) speaker_changed();
 }
 
 uint8_t pit_in(uint16_t port)
@@ -201,7 +209,9 @@ uint8_t port_in8(CPU *cpu, uint16_t port)
 void port_out8(CPU *cpu, uint16_t port, uint8_t val)
 {
     if (port >= 0x40 && port <= 0x43) { pit_out(port, val); return; }
-    if (port == 0x61) { port61 = val; return; }
+    if (port == 0x61) { if (g_trace > 2 && (val & 3) != (port61 & 3)) fprintf(stderr, "[spk] 61h <- %02X\n", val);
+                        sound_update(); port61 = val; speaker_changed(); return; }
+    if (g_trace > 2 && (port == 0x42 || port == 0x43)) fprintf(stderr, "[spk] %02Xh <- %02X\n", port, val);
     if (port == 0x20 || port == 0x21 || port == 0xA0 || port == 0xA1) return;   /* PIC */
     if (port >= 0x3C0 && port <= 0x3DF) { vga_out(port, val); return; }
     if (sound_out(port, val)) return;

@@ -14,6 +14,8 @@ static SDL_Window *win;
 static SDL_Renderer *ren;
 static SDL_Texture *tex;
 static int quit;
+static SDL_AudioDeviceID audio;
+static int audio_rate;
 
 int host_init(const char *title, int scale)
 {
@@ -106,8 +108,39 @@ void host_pump(void)
 int host_quit_requested(void) { return quit; }
 int host_headless(void) { return win == NULL; }
 
+/* Push-model audio: the runtime renders on the game thread in step with the
+ * wall clock and queues it here. Keep ~40-120 ms queued: below that, pad with
+ * silence before it underruns; above, drop the excess so latency stays low. */
+void host_audio_open(int rate)
+{
+    if (getenv("GG_HEADLESS")) return;
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) return;
+    SDL_AudioSpec want = {0}, have;
+    want.freq = rate; want.format = AUDIO_S16SYS; want.channels = 1; want.samples = 512;
+    audio = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+    if (!audio) return;
+    audio_rate = rate;
+    SDL_PauseAudioDevice(audio, 0);
+}
+
+void host_audio_push(const int16_t *s, int n)
+{
+    if (!audio) return;
+    Uint32 queued = SDL_GetQueuedAudioSize(audio) / 2;
+    Uint32 lo = (Uint32)audio_rate / 25, hi = (Uint32)audio_rate / 8;   /* 40 ms, 125 ms */
+    if (queued > hi) return;
+    if (queued < lo / 2) {
+        static int16_t pad[2048];
+        Uint32 need = lo - queued;
+        if (need > 2048) need = 2048;
+        SDL_QueueAudio(audio, pad, need * 2);
+    }
+    SDL_QueueAudio(audio, s, (Uint32)n * 2);
+}
+
 void host_shutdown(void)
 {
+    if (audio) { SDL_CloseAudioDevice(audio); audio = 0; }
     if (!win && !ren) return;
     if (tex) SDL_DestroyTexture(tex);
     if (ren) SDL_DestroyRenderer(ren);
