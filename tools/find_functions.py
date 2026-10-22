@@ -122,6 +122,15 @@ def main():
         if size and ns * 16 not in seeds:
             seeds.add(ns * 16)
             n_extra += 1
+    # The plain `push bp / mov bp, sp` prologue too: the race's start routine
+    # (0x3306) follows a table inside fn_02F48 and is reached only by pointer.
+    for lo, hi in ranges:
+        k = img.find(b"\x55\x8b\xec", lo, hi)
+        while k >= 0:
+            if img[k - 1] != 0x45 and k not in seeds:
+                seeds.add(k)
+                n_extra += 1
+            k = img.find(b"\x55\x8b\xec", k + 1, hi)
     for lo, hi in ranges:
         k = img.find(b"\x45\x55\x8b\xec", lo, hi)
         while k >= 0:
@@ -129,7 +138,7 @@ def main():
                 seeds.add(k)
                 n_extra += 1
             k = img.find(b"\x45\x55\x8b\xec", k + 1, hi)
-    print(f"  entries added: {n_extra} (overlay segment starts, inc-bp prologues)")
+    print(f"  entries added: {n_extra} (overlay segment starts, prologues behind tables)")
     seeds = {s for s in seeds if in_code(s)}
 
 

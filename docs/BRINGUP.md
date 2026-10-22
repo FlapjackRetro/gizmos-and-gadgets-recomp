@@ -76,10 +76,13 @@ its internal name `gizmo.exe`) at startup; the original `ssg.exe` must be in the
   building-entry code (O0E30 entry 5), and without it clicking a building quit the game.
 - **Entries hidden behind jump tables.** A switch table inside a function throws the linear decode
   out of step, so an entry just past it is neither found by the prologue scan nor accepted as an
-  instruction boundary, and every direct call to it becomes an empty `res_` stub -- silently. The
+  instruction boundary: every direct call to it becomes an empty `res_` stub, silently, and every
+  call through a pointer a dispatch miss. The
   blueprint's set-up routine (overlay 0E30 + 13EB) was one: the blueprint drew from an all-zero
   state block (no title, drawing off-centre, no Done button, no tooltips or part pages). Now every
-  `inc bp; push bp; mov bp, sp` and every overlay segment start is seeded, plus two assembly
+  `push bp; mov bp, sp` (and `inc bp` form) and every overlay segment start is seeded -- the race
+  start routine (0x3306, after a table in fn_02F48, called by pointer) quit the game at the
+  racetrack door before that, plus two assembly
   entries by hand. The lift prints the number of `res_` stubs left; the three that remain are
   call-shaped bytes inside data tables.
 - **Handlers reached through data tables.** The keyboard handler at 0454:00E4 looks scancodes up in
