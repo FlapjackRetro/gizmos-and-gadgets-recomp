@@ -9,6 +9,7 @@
  * file, since lifted `iret` returns without popping it.
  */
 #include "rt.h"
+void gg_mods_frame(CPU *cpu);
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -240,7 +241,7 @@ void rt_service(CPU *cpu)
     sound_update();
 
     /* present at ~60 Hz */
-    if (now - g_last_present >= 16) { g_last_present = now; present(cpu); }
+    if (now - g_last_present >= 16) { g_last_present = now; present(cpu); gg_mods_frame(cpu); }
 
     if (g_quit_after && now > g_quit_after) {
         fprintf(stderr, "[rt] GG_QUIT_AFTER reached after %lu frames\n", g_frames);

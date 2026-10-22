@@ -24,11 +24,25 @@ set(RUNTIME_SOURCES
   src/runtime/bios.c
   src/runtime/hw.c
   src/runtime/sound.c
+  src/mods/mods.c
+  src/mods/events.c
   third_party/emu8950/emu8950.c
   third_party/emu8950/emuadpcm.c)
 
 add_executable(gizmos ${RUNTIME_SOURCES} ${GEN_SOURCES})
-target_include_directories(gizmos PRIVATE src src/runtime)
+target_include_directories(gizmos PRIVATE src src/runtime include)
+if(NOT WIN32)
+  target_link_libraries(gizmos PRIVATE ${CMAKE_DL_LIBS})
+endif()
+
+# Example mod (mods/example): a shared library built against include/gg_mod.h only.
+option(GG_BUILD_EXAMPLE_MOD "Build the example mod" ON)
+if(GG_BUILD_EXAMPLE_MOD)
+  add_library(gg_example_mod MODULE mods/example/example_mod.c)
+  target_include_directories(gg_example_mod PRIVATE include)
+  set_target_properties(gg_example_mod PROPERTIES PREFIX "" OUTPUT_NAME "example_mod"
+                        C_VISIBILITY_PRESET hidden)
+endif()
 target_compile_definitions(gizmos PRIVATE RECOMP_IRQ)
 if(GG_SPCHECK)
   target_compile_definitions(gizmos PRIVATE GG_SPCHECK)

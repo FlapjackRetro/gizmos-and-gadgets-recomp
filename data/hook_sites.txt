@@ -1,0 +1,33 @@
+# Hook sites: instructions mods can hook (image offset of the instruction, name).
+#
+# Each is lifted as `if (!gg_site(cpu, addr)) { <instruction> }`: registered hooks run just
+# before the instruction and may change registers, flags and memory, or skip it. src/mods/
+# events.c turns the named ones into the typed events of include/gg_mod.h; mods may also hook
+# any address here directly. Adding an address means re-running tools/build.py.
+# Routine names (R<seg>_<off>, O<stub>_<off>) follow the AP project's RE notes.
+
+# Technology Center, building select (R02E0_0148): `cmp [4596+2b], 4` = "building finished?"
+03234 building_click_aircraft
+03245 building_click_alt_energy
+03256 building_click_automotive
+03263 building_selected              # [4592] = building just chosen
+
+# Entering a building (R02E0_0820)
+03648 level_enter                    # mov [4594], ax   -- ax = level about to load (0-based)
+03670 level_restore_check            # cmp [459C+2b], 0 -- restore the saved warehouse?
+03765 level_ready                    # mov ax, 5        -- warehouse built or restored
+
+# Main loops, once per pass: safe points for actions
+0349C warehouse_tick                 # warehouse rooms (R02E0_0619, state 6), loop head
+C4413 assembly_tick                  # assembly room and blueprint (O0E30_0C89), loop head
+
+# Part box opened (R08F5_0002): `cmp es:[bx+8], 1` -- box already taken?
+08F81 box_open
+
+# Door puzzle finished (R02E0_0A24)
+0382B puzzle_result                  # cmp [bp+6], 0  -- result (0 = failed)
+03871 door_open                      # mov es:[bx+10h], 9 -- door state locked -> open
+
+# Race (R02E0_0564)
+0337F race_start                     # mov ax, [4592]
+033A3 race_end                       # cmp [455E], 0  -- [4560] = result (0 = won), [455E] = aborted

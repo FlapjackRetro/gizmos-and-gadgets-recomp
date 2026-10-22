@@ -1,7 +1,8 @@
 /*
  * main.c - Gizmos & Gadgets, natively recompiled.
  *
- * Usage: gizmos [--game-dir DIR] [--scale N] [-- game switches...]
+ * Usage: gizmos [--game-dir DIR] [--scale N] [--mod LIB]... [--no-mods] [-- game switches...]
+ *   Mods (include/gg_mod.h) load from DIR/mods/ and from each --mod.
  *   The game directory holds the original data files (gizmo000-004.dat,
  *   players.dat). Game switches are passed to the game as on DOS; the
  *   default is "-sb" (Sound Blaster FM music and effects).
@@ -18,17 +19,21 @@
 #include "gen/recomp_all.h"
 #include <stdlib.h>
 #include <string.h>
+#include "mods/mods.h"
 
 void rt_load(CPU *cpu, const char *cmdline);
 void rt_service_config(void);
 
 int main(int argc, char **argv)
 {
-    int scale = 3;
+    int scale = 3, scan_mods = 1, n_mods = 0;
+    const char *mods[16];
     char cmd[128] = " -sb";
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--game-dir") && i + 1 < argc) snprintf(g_game_dir, sizeof g_game_dir, "%s", argv[++i]);
         else if (!strcmp(argv[i], "--scale") && i + 1 < argc) scale = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--mod") && i + 1 < argc) { if (n_mods < 16) mods[n_mods++] = argv[++i]; else ++i; }
+        else if (!strcmp(argv[i], "--no-mods")) scan_mods = 0;
         else if (!strcmp(argv[i], "--")) {
             cmd[0] = 0;
             for (int j = i + 1; j < argc; j++) {
@@ -44,6 +49,7 @@ int main(int argc, char **argv)
     cpu_init(&cpu);
     if (cpu_alloc_mem(&cpu)) return 1;
     rt_load(&cpu, cmd);
+    gg_mods_init(&cpu, mods, n_mods, scan_mods);
     if (host_init("Gizmos & Gadgets", scale)) fprintf(stderr, "[host] no window; running headless\n");
     sound_init();
 

@@ -318,6 +318,9 @@ if (-not (Test-Path $exe)) { Fail "the build finished but $exe is missing" }
 $outDir = Join-Path $InstallDir 'bin'
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 Copy-Item -Force $exe (Join-Path $outDir 'gizmos.exe')
+# The example mod is not activated: mods load from <game folder>\mods\ or with --mod.
+$exampleMod = Join-Path $buildDir 'example_mod.dll'
+if (Test-Path $exampleMod) { Copy-Item -Force $exampleMod (Join-Path $outDir 'example_mod.dll') }
 $debugBat = "@echo off`r`nrem Runs the game with full logging. Afterwards send gizmos-log.txt and misses.txt.`r`nset GG_TRACE=1`r`ngizmos.exe %* 2> gizmos-log.txt`r`n"
 Set-Content -Path (Join-Path $outDir 'gizmos-debug.bat') -Value $debugBat -NoNewline -Encoding ASCII
 Write-Ok "built: $(Join-Path $outDir 'gizmos.exe')"

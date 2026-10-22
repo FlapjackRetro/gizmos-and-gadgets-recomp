@@ -20,6 +20,7 @@ generated from your copy at build time.
 | Input | keyboard through the game's own INT 9 handler; INT 33h mouse driver |
 | Reached | title, intro, Sign In, Technology Center, blueprints (tooltips, part pages), assembly room, warehouse (walking, jumping, doors), door puzzles |
 | Sound | OPL2 FM music and effects (`-sb`, the default) via emu8950; PC speaker (`-si`) wired but unverified |
+| Mods | hook API: load DLLs/.so from `mods/`; events for buildings, levels, boxes, doors, races; see [docs/MODDING.md](docs/MODDING.md) |
 | Platforms | Linux: built and run (headless and SDL). Windows x64: built with the install script and run. macOS: untested |
 
 ## Build
@@ -46,6 +47,7 @@ cmake --build build --config Release
 ```sh
 build/gizmos --game-dir /path/to/your/game        # folder with gizmo000-004.dat, PLAYERS.DAT, ssg.exe
 build/gizmos --game-dir ... -- -sn -gv            # pass the game's own switches after --
+build/gizmos --game-dir ... --mod build/example_mod.so   # load a mod (also: <game dir>/mods/)
 ```
 
 The game folder needs the original `ssg.exe` too: the game's overlay manager opens it at startup
@@ -80,6 +82,7 @@ src/runtime/                DOS (INT 21h), BIOS (10h/16h/1Ah), INT 33h mouse, PI
                             calls the game's own INT 8/9 handlers
 third_party/emu8950/        OPL2 (YM3812) emulator, MIT
 src/host/                   SDL2 window/input, or headless
+src/mods/, include/gg_mod.h mod loader, hook sites -> events, the mod API
 ```
 
 Lifted functions are named after their address in the flattened image (`fn_XXXXX`). Addresses the
@@ -89,8 +92,7 @@ decisions and fixes made along the way.
 
 ## Roadmap
 
-1. A mod hook API at the points already mapped by the AP project: race won, door opened, part box
-   opened, building select, level entry, item grant.
+1. ~~A mod hook API~~ done: [docs/MODDING.md](docs/MODDING.md), for randomizers, Archipelago and other mods.
 2. Replace lifted functions with readable C, starting with the ones mods touch.
 3. Windows and macOS builds tested and packaged.
 
