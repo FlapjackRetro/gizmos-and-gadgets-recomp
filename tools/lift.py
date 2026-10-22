@@ -788,6 +788,16 @@ def main():
         f.write(f"#define CODE_TOP 0x{max(io for _, io, _ in funcs):05X}u\n")
         f.write("""
 static int g_disp_trace = -1;
+/* the last 32 dispatch targets, for a post-mortem when the game exits */
+static unsigned g_ring[32]; static unsigned g_ring_pos;
+void recomp_dump_ring(void) {
+    fprintf(stderr, "[disp] last dispatches (oldest first):");
+    for (unsigned i = 0; i < 32; i++) {
+        unsigned a = g_ring[(g_ring_pos + i) & 31];
+        if (a) fprintf(stderr, " %05X", a);
+    }
+    fprintf(stderr, "\\n");
+}
 static int g_disp_depth = 0;
 /* in-range dispatch misses, deduped, dumped for the next lift round */
 #define MAXMISS 4096
@@ -834,6 +844,7 @@ int recomp_dispatch(CPU *cpu, unsigned seg, unsigned off) {
     if (g_disp_budget && --g_disp_budget <= 0) { cpu->halted = 1; return 0; }
     if (g_disp_depth > 240) { if (g_disp_trace) fprintf(stderr, "[disp] depth cap\\n"); return 0; }
     static long seq = 0; long n = seq++;
+    g_ring[g_ring_pos++ & 31] = addr;
     int garbage = (addr > CODE_TOP + 0x2000);   /* target beyond all code = bad ptr */
     for (int i = 0; i < N_DISP; i++)
         if (g_disp[i].addr == addr) {
@@ -841,7 +852,7 @@ int recomp_dispatch(CPU *cpu, unsigned seg, unsigned off) {
             g_disp_depth++; g_disp[i].fn(cpu); g_disp_depth--; return 1;
         }
     note_miss(addr);
-    if (g_disp_trace && (n < 80 || garbage))
+    if (g_disp_trace)                    /* every miss, not just early ones */
         fprintf(stderr, "[%03ld] ds=%04X cs=%04X MISS %04X:%04X%s\\n", n, cpu->ds, cpu->cs, seg, off, garbage ? " <GARBAGE>" : "");
     return 0;
 }

@@ -96,6 +96,19 @@ def main():
     fs = az.functions.values() if isinstance(az.functions, dict) else az.functions
     pc = {f.start - hdr for f in fs}
     seeds |= pc
+    # Every overlay stub entry jumps to a function entry; the VROOMM stub
+    # table names all of them. Nothing else may reach some of these (the
+    # warehouse's building-entry code is one), so neither Ghidra nor the
+    # prologue scan is guaranteed to find them.
+    ovl_entries = set()
+    for line in open(os.path.splitext(flat)[0] + ".map").read().splitlines()[1:]:
+        f = line.split()
+        for ent in f[4:]:
+            seg_off = ent.split("->")[1]
+            sg, of = (int(x, 16) for x in seg_off.split(":"))
+            ovl_entries.add(sg * 16 + of)
+    n_new_entries = len(ovl_entries - seeds)
+    seeds |= ovl_entries
     seeds = {s for s in seeds if in_code(s)}
 
 
@@ -130,6 +143,7 @@ def main():
                "functions": out}, open(os.path.join(ROOT, "work", "functions.json"), "w"), indent=1)
 
     print(f"code ranges: resident [0,{res_end:#x})  overlays [{ovl_lo:#x},{ovl_hi:#x})")
+    print(f"overlay entry points not found by Ghidra/analyzer, added: {n_new_entries}")
     print(f"inc-bp entries moved back one byte: {n_incbp}")
     print(f"seeds: {n_ghidra} from Ghidra, {len(pc)} from pcrecomp analyzer -> {len(seeds)} merged in code")
     print(f"functions: {len(out) - len(stub_entries)} + {len(stub_entries)} overlay stub entries -> work/functions.json")

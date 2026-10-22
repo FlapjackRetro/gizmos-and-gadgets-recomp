@@ -1,9 +1,14 @@
 # Image offsets the game dispatched to at run time that were not lifted yet
 # (written by the runtime as misses.txt; merged here so the lift is reproducible).
 00298
+004D1
 03CFD
 03D29
 03DF5
 07A04
 0C4A6
 0C616
+0DD65
+10B27
+12F9C
+C5170

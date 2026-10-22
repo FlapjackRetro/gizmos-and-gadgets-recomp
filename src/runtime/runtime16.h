@@ -33,5 +33,6 @@ int  recomp_dispatch(CPU *cpu, unsigned seg, unsigned off);   /* 1 = dispatched 
 void dispatch_near(CPU *cpu, unsigned seg, unsigned off);
 void dispatch_far(CPU *cpu, unsigned seg, unsigned off);
 void recomp_dump_misses(const char *path);
+void recomp_dump_ring(void);
 
 #endif

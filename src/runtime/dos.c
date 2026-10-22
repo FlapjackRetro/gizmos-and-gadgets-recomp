@@ -186,10 +186,14 @@ void dos_int21_impl(CPU *cpu)
     }
 #endif
     switch (ah) {
-    case 0x02: fputc(cpu->dl, stdout); break;
+    case 0x02: fputc(cpu->dl, stdout); fputc(cpu->dl, stderr); break;
     case 0x09: {
         uint32_t a = seg_off(cpu->ds, cpu->dx);
-        for (int i = 0; i < 4096 && cpu->mem[a + i] != '$'; i++) fputc(cpu->mem[a + i], stdout);
+        /* console text goes to the log (stderr) too: an exit message is the
+         * one thing a bug report needs and stdout is often not captured */
+        fputs("[con] ", stderr);
+        for (int i = 0; i < 4096 && cpu->mem[a + i] != '$'; i++) { fputc(cpu->mem[a + i], stdout); fputc(cpu->mem[a + i], stderr); }
+        fputc('\n', stderr);
         fflush(stdout);
         break;
     }
@@ -245,6 +249,7 @@ void dos_int21_impl(CPU *cpu)
         int h = cpu->bx; uint32_t a = seg_off(cpu->ds, cpu->dx);
         if (h == 1 || h == 2) {
             fwrite(&cpu->mem[a], 1, cpu->cx, h == 2 ? stderr : stdout);
+            if (h == 1) { fputs("[con] ", stderr); fwrite(&cpu->mem[a], 1, cpu->cx, stderr); fputc('\n', stderr); }
 #ifdef GG_SPCHECK
             { extern unsigned g_stk[]; extern int g_stk_depth;
               fprintf(stderr, "\n[dos] console write; call chain (%d deep):", g_stk_depth);
@@ -315,6 +320,8 @@ void dos_int21_impl(CPU *cpu)
     }
     case 0x4C:
         fprintf(stderr, "[dos] program exit, code %u\n", cpu->al);
+        recomp_dump_ring();
+        recomp_dump_misses("misses.txt");
         fflush(stdout); fflush(stderr);
         host_shutdown();
         exit(cpu->al);

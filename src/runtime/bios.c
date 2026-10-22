@@ -156,6 +156,20 @@ static unsigned long g_film_every, g_film_next, g_quit_after;
  * later -- drives a headless run through the screens. */
 #define MAXKEYS 64
 static unsigned long g_key_at[MAXKEYS]; static uint8_t g_key_sc[MAXKEYS]; static int g_nkeys, g_key_next;
+/* GG_MOUSE=ms:x,y,b[;ms:x,y,b...]: at ms put the pointer at (x,y) in 320x200
+ * space with buttons b (1 left, 2 right). Headless runs use it to click. */
+#define MAXMOUSE 64
+static unsigned long g_ms_at[MAXMOUSE]; static int g_ms_x[MAXMOUSE], g_ms_y[MAXMOUSE], g_ms_b[MAXMOUSE];
+static int g_nms, g_ms_next;
+static void mouse_script(void)
+{
+    unsigned long now = rt_ms();
+    while (g_ms_next < g_nms && now >= g_ms_at[g_ms_next]) {
+        mouse_host_update(g_ms_x[g_ms_next], g_ms_y[g_ms_next], g_ms_b[g_ms_next]);
+        g_ms_next++;
+    }
+}
+
 static void key_script(void)
 {
     unsigned long now = rt_ms();
@@ -212,6 +226,7 @@ void rt_service(CPU *cpu)
         last_pump = now;
         host_pump();
         key_script();
+        mouse_script();
         if (host_quit_requested()) { host_shutdown(); exit(0); }
         kbd_service(cpu);
         mouse_service(cpu);
@@ -243,6 +258,18 @@ void rt_service_config(void)
         if (c && c != g_film_dir + 1) { g_film_every = strtoul(c + 1, NULL, 10); *c = 0; }
     }
     if ((e = getenv("GG_QUIT_AFTER"))) g_quit_after = strtoul(e, NULL, 10);
+    if ((e = getenv("GG_MOUSE"))) {
+        while (*e && g_nms < MAXMOUSE) {
+            char *c;
+            g_ms_at[g_nms] = strtoul(e, &c, 10);
+            if (*c != ':') break;
+            g_ms_x[g_nms] = (int)strtol(c + 1, &c, 10); if (*c != ',') break;
+            g_ms_y[g_nms] = (int)strtol(c + 1, &c, 10); if (*c != ',') break;
+            g_ms_b[g_nms++] = (int)strtol(c + 1, &c, 10);
+            if (*c != ';') break;
+            e = c + 1;
+        }
+    }
     if ((e = getenv("GG_KEYS"))) {
         while (*e && g_nkeys < MAXKEYS / 2) {
             char *c;

@@ -71,11 +71,20 @@ its internal name `gizmo.exe`) at startup; the original `ssg.exe` must be in the
 - **`inc bp` frames.** Overlaid modules use `inc bp; push bp; mov bp, sp … dec bp; ret`; entries are
   moved back onto the `inc bp` (75 functions).
 - **Startup `_INIT_` table.** Found by scanning the first 0x400 bytes of the c0 startup.
+- **Overlay entry points.** Every VROOMM stub entry's target is seeded as a function start.
+  Four were found by neither Ghidra nor the prologue scan -- one is the warehouse overlay's
+  building-entry code (O0E30 entry 5), and without it clicking a building quit the game.
 - **Entry points discovered at run time** are promoted when they are a Borland prologue, a lone
   `ret/retf`, or start right after a `ret/retf/iret` (hand-written assembly such as the LPX
   decoder at 0399:0465).
 
 ## Debugging aids
+
+- On exit the runtime prints the last 32 dispatch targets and writes `misses.txt` (dispatch
+  targets that were never lifted). Merge new entries into `data/runtime_misses.txt` and re-lift.
+  Console text the game prints (its exit messages) is copied into the log.
+- `GG_KEYS` / `GG_MOUSE` script input for headless runs, e.g. the path to the Aircraft building:
+  `GG_KEYS="22000:1C,26000:1C,30000:14,32000:1C,36000:1C" GG_MOUSE="46000:80,100,0;46300:80,100,1;46500:80,100,0"`
 
 - `GG_SPCHECK=1 python tools/lift.py` + `-DGG_SPCHECK=ON`: every lifted function audits its stack
   delta and BP; the first console output prints the live call chain.
