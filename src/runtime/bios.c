@@ -152,10 +152,12 @@ static unsigned long g_pit_last_ms;
 static char g_film_dir[512];
 static unsigned long g_film_every, g_film_next, g_quit_after;
 
-/* GG_KEYS=ms:sc[,ms:sc...]: press scancode sc (hex) at ms, released 100 ms
- * later -- drives a headless run through the screens. */
-#define MAXKEYS 64
-static unsigned long g_key_at[MAXKEYS]; static uint8_t g_key_sc[MAXKEYS]; static int g_nkeys, g_key_next;
+/* GG_KEYS=ms:sc[/hold][,...]: press scancode sc (hex) at ms and release it
+ * hold ms later (default 100) -- drives a headless run through the screens.
+ * An extended key is written with its E0 prefix, as the keyboard sends it:
+ * E048 is the Up arrow, 48 the keypad 8. */
+#define MAXKEYS 1024
+static unsigned long g_key_at[MAXKEYS]; static uint16_t g_key_sc[MAXKEYS]; static int g_nkeys, g_key_next;
 /* GG_MOUSE=ms:x,y,b[;ms:x,y,b...]: at ms put the pointer at (x,y) in 320x200
  * space with buttons b (1 left, 2 right). Headless runs use it to click. */
 #define MAXMOUSE 64
@@ -174,16 +176,19 @@ static void key_script(void)
 {
     unsigned long now = rt_ms();
     while (g_key_next < g_nkeys && now >= g_key_at[g_key_next]) {
-        uint8_t sc = g_key_sc[g_key_next];
-        kbd_push_scancode((uint8_t)(sc & 0x7F));
-        g_key_at[g_key_next] = 0;
-        g_key_next++;
-        if (g_nkeys < MAXKEYS) {               /* schedule the release */
-            int i = g_nkeys++;
-            for (; i > g_key_next && g_key_at[i - 1] > now + 100; i--) { g_key_at[i] = g_key_at[i - 1]; g_key_sc[i] = g_key_sc[i - 1]; }
-            g_key_at[i] = now + 100; g_key_sc[i] = (uint8_t)(sc | 0x80);
-        }
+        uint16_t sc = g_key_sc[g_key_next++];
+        if (sc & 0x100) kbd_push_scancode(0xE0);
+        kbd_push_scancode((uint8_t)sc);
     }
+}
+
+/* Insert a key event keeping the list in time order (releases interleave). */
+static void key_add(unsigned long at, uint16_t sc)
+{
+    if (g_nkeys >= MAXKEYS) return;
+    int i = g_nkeys++;
+    for (; i > 0 && g_key_at[i - 1] > at; i--) { g_key_at[i] = g_key_at[i - 1]; g_key_sc[i] = g_key_sc[i - 1]; }
+    g_key_at[i] = at; g_key_sc[i] = sc;
 }
 
 static void present(CPU *cpu)
@@ -241,6 +246,15 @@ void rt_service(CPU *cpu)
         fprintf(stderr, "[rt] GG_QUIT_AFTER reached after %lu frames\n", g_frames);
         vga_dump_bmp(cpu, "last_frame.bmp");
         recomp_dump_misses("misses.txt");
+        {   /* GG_MEMDUMP=file: the whole 1 MB guest memory plus registers, for post-mortems */
+            const char *md = getenv("GG_MEMDUMP");
+            FILE *f = md ? fopen(md, "wb") : NULL;
+            if (f) {
+                fwrite(cpu->mem, 1, 0x100000, f);
+                fclose(f);
+                fprintf(stderr, "[rt] memory -> %s (ds=%04X ss=%04X sp=%04X)\n", md, cpu->ds, cpu->ss, cpu->sp);
+            }
+        }
         host_shutdown();
         exit(0);
     }
@@ -271,11 +285,15 @@ void rt_service_config(void)
         }
     }
     if ((e = getenv("GG_KEYS"))) {
-        while (*e && g_nkeys < MAXKEYS / 2) {
+        while (*e) {
             char *c;
-            g_key_at[g_nkeys] = strtoul(e, &c, 10);
+            unsigned long at = strtoul(e, &c, 10), hold = 100;
             if (*c != ':') break;
-            g_key_sc[g_nkeys++] = (uint8_t)strtoul(c + 1, &c, 16);
+            unsigned long v = strtoul(c + 1, &c, 16);
+            if (*c == '/') hold = strtoul(c + 1, &c, 10);
+            uint16_t sc = (uint16_t)((v & 0x7F) | ((v >> 8) == 0xE0 ? 0x100 : 0));
+            key_add(at, sc);
+            key_add(at + hold, (uint16_t)(sc | 0x80));
             if (*c != ',') break;
             e = c + 1;
         }

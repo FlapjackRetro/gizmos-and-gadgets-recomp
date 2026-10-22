@@ -830,3 +830,24 @@ O 0E9F:05B3
 O 0E9F:0605
 O 0E9F:063D
 O 0E9F:0667
+# Added by hand (not from Ghidra): assembly entries right after a jump table, reached only by
+# near calls, so neither the analyzer nor the lifter's boundary check could place them.
+O 0e4e:0c3e
+O 0e70:071c
+# The game's INT 9 handler (0454:00E4) looks the scancode up in a table at DGROUP:022C
+# (Left, Right, Up, Down, Space, Ctrl, C) and calls a press or release handler at 0454:0187..01EF
+# through it. Each handler sets or clears one bit of the held-keys word DGROUP:0218 -- what the
+# warehouse reads to move the player. Nothing references them directly.
+R 046C7
+R 046CF
+R 046D7
+R 046DF
+R 046E7
+R 046EF
+R 046F7
+R 04703
+R 0470F
+R 04717
+R 0471F
+R 04727
+R 0472F

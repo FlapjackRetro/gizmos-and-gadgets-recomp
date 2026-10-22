@@ -74,6 +74,18 @@ its internal name `gizmo.exe`) at startup; the original `ssg.exe` must be in the
 - **Overlay entry points.** Every VROOMM stub entry's target is seeded as a function start.
   Four were found by neither Ghidra nor the prologue scan -- one is the warehouse overlay's
   building-entry code (O0E30 entry 5), and without it clicking a building quit the game.
+- **Entries hidden behind jump tables.** A switch table inside a function throws the linear decode
+  out of step, so an entry just past it is neither found by the prologue scan nor accepted as an
+  instruction boundary, and every direct call to it becomes an empty `res_` stub -- silently. The
+  blueprint's set-up routine (overlay 0E30 + 13EB) was one: the blueprint drew from an all-zero
+  state block (no title, drawing off-centre, no Done button, no tooltips or part pages). Now every
+  `inc bp; push bp; mov bp, sp` and every overlay segment start is seeded, plus two assembly
+  entries by hand. The lift prints the number of `res_` stubs left; the three that remain are
+  call-shaped bytes inside data tables.
+- **Handlers reached through data tables.** The keyboard handler at 0454:00E4 looks scancodes up in
+  a table at DGROUP:022C (arrows, Space, Ctrl, C) and calls a press/release routine for each; they
+  set the held-keys bits the warehouse reads. Nothing references them directly, so they are seeded
+  in `data/ghidra_function_starts.txt`. Without them the arrow keys did nothing in the warehouse.
 - **Entry points discovered at run time** are promoted when they are a Borland prologue, a lone
   `ret/retf`, or start right after a `ret/retf/iret` (hand-written assembly such as the LPX
   decoder at 0399:0465).
@@ -83,8 +95,20 @@ its internal name `gizmo.exe`) at startup; the original `ssg.exe` must be in the
 - On exit the runtime prints the last 32 dispatch targets and writes `misses.txt` (dispatch
   targets that were never lifted). Merge new entries into `data/runtime_misses.txt` and re-lift.
   Console text the game prints (its exit messages) is copied into the log.
-- `GG_KEYS` / `GG_MOUSE` script input for headless runs, e.g. the path to the Aircraft building:
-  `GG_KEYS="22000:1C,26000:1C,30000:14,32000:1C,36000:1C" GG_MOUSE="46000:80,100,0;46300:80,100,1;46500:80,100,0"`
+- `GG_KEYS` / `GG_MOUSE` script input for headless runs. From a blank `PLAYERS.DAT`: Enter through
+  the intro, type "Ta", start with chimps, click Aircraft, dismiss the hint, click Done, go up to the
+  warehouse, dismiss its hint, walk right, left, then jump right into the first door's puzzle:
+  ```sh
+  K=""; for t in $(seq 20000 1500 35000); do K="$K$t:1C,"; done
+  K="${K}37000:14,38000:1E,39000:1C,42000:1C,56000:1C,61000:1C,63000:E048,69000:1C"
+  K="$K,71000:E04D/3000,75000:E04B/1500,77500:E048/400,77600:E04D/800"
+  GG_KEYS="$K" GG_MOUSE="50000:80,100,0;50300:80,100,1;50500:80,100,0;58000:270,150,0;58300:270,150,1;58500:270,150,0" \
+  GG_HEADLESS=1 GG_FILM=film:500 GG_QUIT_AFTER=80000 build/gizmos --game-dir run
+  ```
+  (Timings are wall-clock and machine-dependent; check the film if a step lands early.)
+- `-DGG_WATCH=ON` + `GG_WATCH=<linear>:<len>`: every guest write to a range, with the host call
+  stack -- how the blueprint's zeroed state block was traced to the call that never ran.
+  `GG_MEMDUMP=file` saves guest memory at `GG_QUIT_AFTER`.
 
 - `GG_SPCHECK=1 python tools/lift.py` + `-DGG_SPCHECK=ON`: every lifted function audits its stack
   delta and BP; the first console output prints the live call chain.

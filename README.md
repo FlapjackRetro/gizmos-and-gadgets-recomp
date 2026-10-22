@@ -15,13 +15,13 @@ generated from your copy at build time.
 
 | Area | State |
 |---|---|
-| Lift | all 1,314 functions lift to C and compile (GCC, Clang; MSVC untested) |
+| Lift | all 1,346 functions lift to C and compile (GCC, Clang; MSVC untested) |
 | Boot | Borland startup, VROOMM overlay manager, hardware checks, resource archives |
 | Video | VGA mode 13h, palette, 60 Hz presentation |
 | Input | keyboard through the game's own INT 9 handler; INT 33h mouse driver |
-| Reached | title, intro story, **Sign In** screen |
+| Reached | title, intro, Sign In, Technology Center, blueprints (tooltips, part pages), assembly room, warehouse (walking, jumping, doors), door puzzles |
 | Sound | OPL2 FM music and effects (`-sb`, the default) via emu8950; PC speaker (`-si`) wired but unverified |
-| Platforms | Linux: built and run (headless and SDL). Windows x64: cross-compiles (llvm-mingw), not yet run. macOS: untested |
+| Platforms | Linux: built and run (headless and SDL). Windows x64: built with the install script and run. macOS: untested |
 
 ## Build
 
@@ -58,8 +58,11 @@ Bring-up switches (environment variables):
 |---|---|
 | `GG_TRACE=1` / `2` | log DOS, BIOS, unhandled ports / every BIOS interrupt |
 | `GG_FILM=dir[:ms]` | save the screen as BMP every *ms* (default 1000) |
-| `GG_KEYS=ms:sc,...` | press PC scancode *sc* (hex) at *ms*, e.g. `20000:1C` = Enter |
+| `GG_KEYS=ms:sc[/hold],...` | press PC scancode *sc* (hex) at *ms* for *hold* ms (default 100), e.g. `20000:1C` = Enter; extended keys with their prefix, `E048` = Up arrow |
+| `GG_MOUSE=ms:x,y,b;...` | at *ms* put the pointer at (*x*,*y*) (320x200) with buttons *b* (1 = left) |
 | `GG_QUIT_AFTER=ms` | exit after *ms*, writing `last_frame.bmp` and `misses.txt` |
+| `GG_MEMDUMP=file` | with `GG_QUIT_AFTER`: also save the 1 MB guest memory |
+| `GG_WATCH=addr:len,...` | build with `-DGG_WATCH=ON`: report every write to those linear addresses, with a host backtrace |
 | `GG_HEADLESS=1` | no window |
 | `GG_WAV=file.wav` | also record the audio to a WAV file |
 | `GG_MUTE=1`, `GG_VOLUME=percent` | audio off / level (100 = default) |

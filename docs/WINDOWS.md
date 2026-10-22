@@ -67,6 +67,6 @@ cmake --build build-win
 
 ## Status
 
-- Cross-compiled with llvm-mingw 20241217 (Clang 19); not yet run on Windows.
+- Built with llvm-mingw 20241217 (Clang 19) through the install script, and run on Windows.
 - MSVC build: not yet tried. The code avoids GCC extensions; the lifted code's anonymous
   struct-in-union register layout (`cpu.h`) is C11 and accepted by MSVC.

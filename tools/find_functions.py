@@ -109,6 +109,27 @@ def main():
             ovl_entries.add(sg * 16 + of)
     n_new_entries = len(ovl_entries - seeds)
     seeds |= ovl_entries
+    # Each overlay's code starts with a function (the segment start is never
+    # mid-routine), and `inc bp / push bp / mov bp, sp` is the far-frame
+    # prologue of overlaid code -- it occurs nowhere but at an entry. Both are
+    # missed when a jump table just before them throws the prologue scan and
+    # the lifter's instruction-boundary check out of step; the blueprint's
+    # set-up routine (overlay 0E30 + 13EB) was one, so its call became an empty
+    # stub and the blueprint drew from an all-zero state block.
+    img = data[hdr:]
+    n_extra = 0
+    for stub, (ns, size) in ovmap.items():
+        if size and ns * 16 not in seeds:
+            seeds.add(ns * 16)
+            n_extra += 1
+    for lo, hi in ranges:
+        k = img.find(b"\x45\x55\x8b\xec", lo, hi)
+        while k >= 0:
+            if k not in seeds and k + 1 not in seeds:
+                seeds.add(k)
+                n_extra += 1
+            k = img.find(b"\x45\x55\x8b\xec", k + 1, hi)
+    print(f"  entries added: {n_extra} (overlay segment starts, inc-bp prologues)")
     seeds = {s for s in seeds if in_code(s)}
 
 
