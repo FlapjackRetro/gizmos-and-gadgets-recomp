@@ -5,8 +5,7 @@ that runs without DOSBox. The game's 16-bit x86 code is statically recompiled to
 against a small runtime that stands in for DOS, the BIOS and the PC hardware, with SDL2 for the
 window and input.
 
-This repository is the **recompilation** only: a faithful, moddable native port. The Archipelago
-randomizer is a separate project built on top of it.
+This repository is the **recompilation**, which is to say, meant as a faithful, moddable native port. The goal of this decompilation was to enable other projects, such as randomizers and Archipelago implementations.
 
 No game code or data is in this repository. You bring your own `ssg.exe` and data files; the C is
 generated from your copy at build time.
