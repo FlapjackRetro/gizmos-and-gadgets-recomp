@@ -1,0 +1,21 @@
+# Cross-compile for Windows x64 from Linux/macOS with a MinGW-w64 toolchain
+# (llvm-mingw or gcc-mingw-w64). Usage:
+#   cmake -S . -B build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64-x86_64.cmake [-DMINGW_ROOT=/path/to/llvm-mingw]
+set(CMAKE_SYSTEM_NAME Windows)
+set(CMAKE_SYSTEM_PROCESSOR x86_64)
+set(_triple x86_64-w64-mingw32)
+if(MINGW_ROOT)
+  set(_prefix "${MINGW_ROOT}/bin/${_triple}")
+else()
+  set(_prefix "${_triple}")
+endif()
+set(CMAKE_C_COMPILER   "${_prefix}-gcc")
+set(CMAKE_CXX_COMPILER "${_prefix}-g++")
+set(CMAKE_RC_COMPILER  "${_prefix}-windres")
+if(MINGW_ROOT)
+  set(CMAKE_FIND_ROOT_PATH "${MINGW_ROOT}/${_triple}")
+endif()
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)

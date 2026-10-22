@@ -767,6 +767,10 @@ def main():
                 f.write(f"void {n}__body(CPU *cpu);\n")
         for n in names:
             f.write(f"void {n}(CPU *cpu);\n")
+        # Stubs for unresolved call targets (defined in recomp_dispatch.c).
+        # Without declarations, newer compilers (Clang, GCC 14+) reject the calls.
+        for n in stubs:
+            f.write(f"void {n}(CPU *cpu);\n")
         f.write("\n#endif\n")
 
     # dispatch table: image addr -> fn ptr (for indirect call/jmp by address)

@@ -95,12 +95,41 @@ static void open_file(CPU *cpu, const char *mode, int create_ok)
     cpu->ax = (uint16_t)h; ok(cpu);
 }
 
+/* Directory listing of the game folder, one name at a time. */
 #ifdef _WIN32
 static HANDLE g_find = INVALID_HANDLE_VALUE;
+static WIN32_FIND_DATAA g_fd;
+static int g_fd_pending;
+static void dir_open(void)
+{
+    char pat[1100];
+    if (g_find != INVALID_HANDLE_VALUE) FindClose(g_find);
+    snprintf(pat, sizeof pat, "%s\\*", g_game_dir);
+    g_find = FindFirstFileA(pat, &g_fd);
+    g_fd_pending = g_find != INVALID_HANDLE_VALUE;
+}
+static const char *dir_next(void)
+{
+    if (g_find == INVALID_HANDLE_VALUE) return NULL;
+    if (!g_fd_pending && !FindNextFileA(g_find, &g_fd)) { FindClose(g_find); g_find = INVALID_HANDLE_VALUE; return NULL; }
+    g_fd_pending = 0;
+    return g_fd.cFileName;
+}
 #else
 static DIR *g_find;
-static char g_find_pat[64];
+static void dir_open(void)
+{
+    if (g_find) closedir(g_find);
+    g_find = opendir(g_game_dir);
+}
+static const char *dir_next(void)
+{
+    struct dirent *e = g_find ? readdir(g_find) : NULL;
+    if (!e && g_find) { closedir(g_find); g_find = NULL; }
+    return e ? e->d_name : NULL;
+}
 #endif
+static char g_find_pat[64];
 
 /* DOS wildcard match, case-insensitive, 8.3 semantics are close enough. */
 static int wild(const char *p, const char *s)
@@ -130,23 +159,18 @@ static void dta_fill(CPU *cpu, const char *name, uint32_t size)
 
 static int find_step(CPU *cpu)
 {
-#ifdef _WIN32
-    (void)cpu;
-    return 0;   /* TODO: FindNextFile when the game turns out to need it */
-#else
-    struct dirent *e;
-    while (g_find && (e = readdir(g_find))) {
-        if (!wild(g_find_pat, e->d_name) || strlen(e->d_name) > 12) continue;
+    const char *name;
+    while ((name = dir_next())) {
+        if (!wild(g_find_pat, name) || strlen(name) > 12) continue;
         char path[1200];
-        snprintf(path, sizeof path, "%s/%s", g_game_dir, e->d_name);
+        snprintf(path, sizeof path, "%s/%s", g_game_dir, name);
         FILE *f = fopen(path, "rb");
         long sz = 0;
         if (f) { fseek(f, 0, SEEK_END); sz = ftell(f); fclose(f); }
-        dta_fill(cpu, e->d_name, (uint32_t)sz);
+        dta_fill(cpu, name, (uint32_t)sz);
         return 1;
     }
     return 0;
-#endif
 }
 
 void dos_int21_impl(CPU *cpu)
@@ -297,11 +321,8 @@ void dos_int21_impl(CPU *cpu)
     case 0x4E: {                                          /* find first */
         char pat[256];
         read_name(cpu, cpu->ds, cpu->dx, pat, sizeof pat);
-#ifndef _WIN32
-        if (g_find) closedir(g_find);
-        g_find = opendir(g_game_dir);
+        dir_open();
         snprintf(g_find_pat, sizeof g_find_pat, "%s", base_name(pat));
-#endif
         if (find_step(cpu)) { cpu->ax = 0; ok(cpu); } else fail(cpu, 18);
         break;
     }

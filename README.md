@@ -21,7 +21,7 @@ generated from your copy at build time.
 | Input | keyboard through the game's own INT 9 handler; INT 33h mouse driver |
 | Reached | title, intro story, **Sign In** screen |
 | Sound | OPL2 FM music and effects (`-sb`, the default) via emu8950; PC speaker (`-si`) wired but unverified |
-| Platforms | Linux built and run headless and under SDL; Windows/macOS builds are set up, not yet tested |
+| Platforms | Linux: built and run (headless and SDL). Windows x64: cross-compiles (llvm-mingw), not yet run. macOS: untested |
 
 ## Build
 
@@ -39,7 +39,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 
-On Windows use a Developer PowerShell (MSVC) or MinGW; the commands are the same.
+Windows (native MSVC build or cross-compiling from Linux/macOS): see [docs/WINDOWS.md](docs/WINDOWS.md).
 
 ## Run
 
