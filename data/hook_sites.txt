@@ -31,3 +31,7 @@ C4413 assembly_tick                  # assembly room and blueprint (O0E30_0C89),
 # Race (R02E0_0564)
 0337F race_start                     # mov ax, [4592]
 033A3 race_end                       # cmp [455E], 0  -- [4560] = result (0 = won), [455E] = aborted
+
+# Cyberchimps (O0E0D, flattened at C000)
+C0070 chimp_box_open                 # O0E0D_0000 `or ax, ax` after R053F_02BB(actor): 0 = the chimp takes the box's part
+C00D6 chimp_drop                     # O0E0D_00A1 `or ax, [bp-6]`: dx:ax = part the hit chimp drops (0 = none)
