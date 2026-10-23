@@ -302,12 +302,20 @@ try {
 
     Write-Step 'Compiling gizmos.exe (several minutes; SDL2 is downloaded and built too)'
     $buildDir = Join-Path $src.Recomp 'build-windows'
+    # A configure that failed (or used other tools) leaves its compiler checks behind: start clean.
+    foreach ($stale in @('CMakeCache.txt', 'CMakeFiles')) {
+        $p = Join-Path $buildDir $stale
+        if (Test-Path $p) { Remove-Item -Recurse -Force $p }
+    }
+    # Forward slashes: CMake writes CMAKE_RC_COMPILER verbatim into CMakeRCCompiler.cmake, where a
+    # backslash path (C:\Users\...) is read as escape sequences ("Invalid character escape '\U'").
+    $cmakePath = { param($p) $p -replace '\\', '/' }
     Invoke-Checked $cmake @('-S', '.', '-B', $buildDir, '-G', 'Ninja',
                             '-DCMAKE_BUILD_TYPE=Release',
-                            "-DCMAKE_C_COMPILER=$cc",
-                            "-DCMAKE_CXX_COMPILER=$cxx",
-                            "-DCMAKE_RC_COMPILER=$rc",
-                            "-DCMAKE_MAKE_PROGRAM=$ninja") 'Configuring the build'
+                            "-DCMAKE_C_COMPILER=$(& $cmakePath $cc)",
+                            "-DCMAKE_CXX_COMPILER=$(& $cmakePath $cxx)",
+                            "-DCMAKE_RC_COMPILER=$(& $cmakePath $rc)",
+                            "-DCMAKE_MAKE_PROGRAM=$(& $cmakePath $ninja)") 'Configuring the build'
     Invoke-Checked $cmake @('--build', $buildDir) 'Compiling'
 } finally {
     Pop-Location
