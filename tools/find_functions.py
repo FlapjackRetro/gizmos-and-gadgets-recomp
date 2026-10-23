@@ -29,6 +29,7 @@ from pcrecomp_path import pcrecomp_home  # noqa: E402
 
 sys.path.insert(0, os.path.join(pcrecomp_home(), "tools", "disasm"))
 from analyze import Analyzer  # noqa: E402
+from decode16 import Decoder  # noqa: E402
 
 
 def vroomm_layout(orig):
@@ -152,6 +153,44 @@ def main():
             seeds.discard(s0)
             seeds.add(s0 - 1)
             n_incbp += 1
+
+    # Drop starts that sit in the middle of an instruction. Decode linearly from
+    # the previous start; if an instruction straddles the next start before any
+    # ret/jmp ends that run, the start cannot be an entry. Ghidra's list had one
+    # (O0E83:092D, three bytes into a `mov word [bp-18h], 13h` of the help
+    # pager): it cut the pager short, which fell through into nothing, and every
+    # Help topic froze the game. Entries the VROOMM table or a segment start
+    # vouch for are never dropped.
+    sure = ovl_entries | {ns * 16 for ns, size in ovmap.values() if size}
+    TERM = {"ret", "retf", "iret", "jmp", "jmp far", "hlt"}
+    dropped = []
+    for lo, hi in ranges:
+        prev = None
+        for s in sorted(x for x in seeds if lo <= x < hi):
+            if prev is None or s in sure:
+                prev = s
+                continue
+            verdict = None                      # None: cannot tell; keep
+            try:
+                for ins in Decoder(img[prev:s + 16], base_offset=prev).decode_all():
+                    if ins.offset == s:
+                        verdict = True
+                        break
+                    if ins.offset < s < ins.offset + ins.length:
+                        verdict = False
+                        break
+                    if ins.offset >= s or ins.mnemonic in TERM:
+                        break
+            except Exception:
+                pass
+            if verdict is False:
+                seeds.discard(s)
+                dropped.append(s)
+            else:
+                prev = s
+    if dropped:
+        print(f"  starts dropped (mid-instruction): {len(dropped)}: "
+              + " ".join(f"{s:05X}" for s in dropped))
 
     funcs = []
     for lo, hi in ranges:
