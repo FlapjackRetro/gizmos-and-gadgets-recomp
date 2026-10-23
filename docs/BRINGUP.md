@@ -89,6 +89,10 @@ its internal name `gizmo.exe`) at startup; the original `ssg.exe` must be in the
   a table at DGROUP:022C (arrows, Space, Ctrl, C) and calls a press/release routine for each; they
   set the held-keys bits the warehouse reads. Nothing references them directly, so they are seeded
   in `data/ghidra_function_starts.txt`. Without them the arrow keys did nothing in the warehouse.
+- **Starts in the middle of an instruction.** Seeds are checked against the decode of the
+  function before them: one whose address an instruction straddles (before any ret/jmp) is dropped.
+  The Ghidra list had `O0E83:092D`, three bytes into an instruction of the Help pager; the pager
+  was cut short there and fell through into nothing, so every Help topic froze the game.
 - **Entry points discovered at run time** are promoted when they are a Borland prologue, a lone
   `ret/retf`, or start right after a `ret/retf/iret` (hand-written assembly such as the LPX
   decoder at 0399:0465).
