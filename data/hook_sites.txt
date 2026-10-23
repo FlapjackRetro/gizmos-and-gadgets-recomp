@@ -38,3 +38,6 @@ C00D6 chimp_drop                     # O0E0D_00A1 `or ax, [bp-6]`: dx:ax = part 
 
 # New player (O0E2D, flattened at C22A): the "With Chimps / Without Chimps" question
 C35A7 chimps_prompt                  # call O0E83_0C5E (dialog 0x1067; ax != 0 = with chimps -> [4578])
+
+# Race results (O0E36, flattened at C54B): the podium after a race (main state 12, O0E36_0573)
+C5A44 podium_choice                  # sub ax, 7D0h -- ax = sign clicked: 7D0 rerun race, 7D1 next level, 7D2 (after a loss), 7D3 Tech Center, 7D4 menu
