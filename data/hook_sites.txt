@@ -11,6 +11,7 @@
 03245 building_click_alt_energy
 03256 building_click_automotive
 03263 building_selected              # [4592] = building just chosen
+0303D parking_lot_vehicle            # R02E0 Technology Center: per building si, k = [bp-4] = 0..[4596+2si], draws vehicle di (sprite, spot, [5C10+di] colour); di = si*5 + k
 
 # Entering a building (R02E0_0820)
 03648 level_enter                    # mov [4594], ax   -- ax = level about to load (0-based)
